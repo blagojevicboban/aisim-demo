@@ -1,0 +1,30 @@
+#!/bin/bash
+set -e
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$DIR"
+
+echo "[$(date -Iseconds)] Pulling latest demo files from GitHub..."
+git pull origin main
+
+# Locate Moodle directory
+if [ -n "$MOODLE_DIR" ] && [ -d "$MOODLE_DIR" ]; then
+    TARGET_DIR="$MOODLE_DIR"
+elif [ -d "/home/aisim/public_html/moodle" ]; then
+    TARGET_DIR="/home/aisim/public_html/moodle"
+elif [ -d "/home/aisim/public_html" ]; then
+    TARGET_DIR="/home/aisim/public_html"
+elif [ -d "/var/www/moodle" ]; then
+    TARGET_DIR="/var/www/moodle"
+else
+    echo "ERROR: Could not locate Moodle directory! Set MOODLE_DIR in environment."
+    exit 1
+fi
+
+echo "[$(date -Iseconds)] Deploying to ${TARGET_DIR}..."
+cp demo.php "${TARGET_DIR}/"
+cp aisim-demo.mbz "${TARGET_DIR}/"
+cp aisim-demo-sr.mbz "${TARGET_DIR}/"
+
+echo "[$(date -Iseconds)] Running demo.php reset..."
+/usr/bin/php "${TARGET_DIR}/demo.php" reset
+echo "[$(date -Iseconds)] AISim demo deploy finished successfully!"

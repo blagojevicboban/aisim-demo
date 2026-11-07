@@ -31,13 +31,15 @@ cp aisim-demo.mbz "${TARGET_DIR}/"
 cp aisim-demo-sr.mbz "${TARGET_DIR}/"
 if [ -f tiny_aisim-0.10.0.zip ]; then
     cp tiny_aisim-0.10.0.zip "${TARGET_DIR}/"
-fi
-if [ -f login_bg.png ]; then
-    cp login_bg.png "${TARGET_DIR}/"
+    echo "[$(date -Iseconds)] Extracting tiny_aisim-0.10.0.zip into lib/editor/tiny/plugins..."
+    unzip -o tiny_aisim-0.10.0.zip -d "${TARGET_DIR}/lib/editor/tiny/plugins/" || true
 fi
 
 echo "[$(date -Iseconds)] Running plugin upgrades if any..."
 /usr/bin/php "${TARGET_DIR}/admin/cli/upgrade.php" --non-interactive || true
+
+echo "[$(date -Iseconds)] Purging Moodle caches..."
+/usr/bin/php "${TARGET_DIR}/admin/cli/purge_caches.php" || true
 
 echo "[$(date -Iseconds)] Running demo.php reset..."
 /usr/bin/php "${TARGET_DIR}/demo.php" reset

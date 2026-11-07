@@ -134,24 +134,24 @@ function demo_settings(): void {
 
     // Demo login instructions on login/index.php
     $auth_instructions = <<<'HTML'
-<div class="card border-0 shadow-lg rounded-4 p-4 text-start text-white" style="background: rgba(15, 23, 42, 0.9) !important; backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.2) !important;">
+<div class="card border-0 shadow-lg rounded-4 p-4 text-start text-white" style="background: rgba(15, 23, 42, 0.92) !important; backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.18) !important; max-width: 440px; margin: 0 auto;">
     <div class="d-flex align-items-center gap-2 mb-3">
         <span class="fs-4">⚡</span>
         <h5 class="fw-bold mb-0 text-white">Instant Demo Access</h5>
     </div>
     <div class="p-3 rounded-3 mb-2" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.12);">
         <div class="fw-bold mb-1" style="color: #38bdf8;">🧑‍🏫 Teacher: <code>teacher</code></div>
-        <div class="small" style="color: rgba(255, 255, 255, 0.85);">Explore all lesson modules, insert AI simulations in TinyMCE, create and configure quiz questions.</div>
+        <div class="small" style="color: rgba(255, 255, 255, 0.9); line-height: 1.4;">Explore all lesson modules, insert AI simulations in TinyMCE, create and configure quiz questions.</div>
     </div>
     <div class="p-3 rounded-3 mb-3" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.12);">
         <div class="fw-bold mb-1" style="color: #fbbf24;">🎓 Student: <code>student</code></div>
-        <div class="small" style="color: rgba(255, 255, 255, 0.85);">Interact with 9 AI simulation engines, tune hyperparameters, solve autograded quiz challenges.</div>
+        <div class="small" style="color: rgba(255, 255, 255, 0.9); line-height: 1.4;">Interact with 9 AI simulation engines, tune hyperparameters, solve autograded quiz challenges.</div>
     </div>
     <div class="d-flex align-items-center justify-content-between pt-2 border-top border-white border-opacity-25 small mb-2">
-        <span style="color: rgba(255, 255, 255, 0.85);">Password:</span>
-        <code style="background: #000000; color: #fde047; padding: 3px 8px; border-radius: 6px; font-weight: bold; font-size: 0.95rem;">Demo-2026</code>
+        <span style="color: rgba(255, 255, 255, 0.9);">Password:</span>
+        <code style="background: #000000; color: #fde047; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 0.95rem; border: 1px solid rgba(253, 224, 71, 0.4);">Demo-2026</code>
     </div>
-    <div class="text-center small mt-2" style="color: rgba(255, 255, 255, 0.7);">
+    <div class="text-center small mt-2" style="color: rgba(255, 255, 255, 0.75);">
         Or click the <strong>Log in as guest</strong> button below!
     </div>
 </div>
@@ -282,7 +282,8 @@ pre, code, kbd, samp {
 }
 CSS;
     set_config('customcss', $customcss, 'theme_boost');
-    set_config('customcss', $customcss, 'theme_moove');
+    set_config('scss', $customcss, 'theme_moove');
+    set_config('theme', 'moove');
 
     // The shared demo accounts cannot change their password, profile or private files.
     $userrole = get_archetype_roles('user');
@@ -291,52 +292,39 @@ CSS;
     foreach (['moodle/user:changeownpassword', 'moodle/user:editownprofile', 'moodle/user:manageownfiles'] as $cap) {
         assign_capability($cap, CAP_PROHIBIT, $userrole->id, $system->id, true);
     }
-    // Set native theme_moove login background image
-    demo_set_login_background();
+
+    demo_ensure_tiny_aisim();
     echo "settings and custom CSS done\n";
 }
 
 /**
- * Sets the theme_moove login background image natively in Moodle File Storage
- * and directly on disk to completely replace the default office photo.
+ * Ensures tiny_aisim is properly deployed from zip and enabled in editor_tiny.
  */
-function demo_set_login_background(): void {
+function demo_ensure_tiny_aisim(): void {
     global $CFG;
-    $bgfile = __DIR__ . '/login_bg.png';
-    if (!file_exists($bgfile)) {
-        echo "login_bg.png not found\n";
-        return;
-    }
-
-    try {
-        $fs = get_file_storage();
-        $syscontext = \context_system::instance();
-        $filerecord = [
-            'contextid' => $syscontext->id,
-            'component' => 'theme_moove',
-            'filearea' => 'loginbgimg',
-            'itemid' => 0,
-            'filepath' => '/',
-            'filename' => 'login_bg.png',
-        ];
-        $fs->delete_area_files($syscontext->id, 'theme_moove', 'loginbgimg');
-        $fs->create_file_from_pathname($filerecord, $bgfile);
-        set_config('loginbgimg', 'login_bg.png', 'theme_moove');
-        echo "theme_moove loginbgimg set in file storage\n";
-    } catch (\Throwable $e) {
-        echo "Could not set loginbgimg in file storage: " . $e->getMessage() . "\n";
-    }
-
-    // Also overwrite default theme pix files on disk if present
-    $pix_candidates = [
-        $CFG->dirroot . '/theme/moove/pix/login_background.jpg',
-        $CFG->dirroot . '/theme/moove/pix/login_background.png',
+    $zipcandidates = [
+        $CFG->dirroot . '/tiny_aisim-0.10.0.zip',
+        __DIR__ . '/tiny_aisim-0.10.0.zip',
     ];
-    foreach ($pix_candidates as $pix) {
-        if (file_exists($pix)) {
-            @copy($bgfile, $pix);
-            echo "Replaced default pix on disk: {$pix}\n";
+    foreach ($zipcandidates as $zipfile) {
+        if (file_exists($zipfile) && class_exists('ZipArchive')) {
+            $zip = new ZipArchive();
+            if ($zip->open($zipfile) === true) {
+                $dest = $CFG->dirroot . '/lib/editor/tiny/plugins';
+                $zip->extractTo($dest);
+                $zip->close();
+                echo "tiny_aisim-0.10.0.zip deployed into {$dest}/aisim\n";
+                break;
+            }
         }
+    }
+
+    // Ensure tiny_aisim is not in disabledsubplugins
+    $disabled = get_config('editor_tiny', 'disabledsubplugins') ?: '';
+    if (strpos($disabled, 'aisim') !== false) {
+        $parts = array_filter(array_map('trim', explode(',', $disabled)), fn($p) => $p !== 'aisim' && $p !== '');
+        set_config('disabledsubplugins', implode(',', $parts), 'editor_tiny');
+        echo "tiny_aisim enabled in editor_tiny\n";
     }
 }
 

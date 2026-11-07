@@ -53,56 +53,46 @@ if (!in_array($command, ['setup', 'reset'], true)) {
     fwrite(STDERR, "Usage: php demo.php setup|reset\n");
     exit(1);
 }
+\core\session\manager::set_user(get_admin());
 
-@file_put_contents(__DIR__ . '/demo_status.txt', "Started {$command} at " . date('Y-m-d H:i:s') . "\n");
+// Settings and CSS are always updated so design refinements apply on reset too.
+demo_settings();
+demo_cleanup_obsolete_courses();
+if ($command === 'setup') {
+    demo_languages();
+}
 
-try {
-    \core\session\manager::set_user(get_admin());
+$en_id = demo_restore_course(DEMO_MBZ_EN, DEMO_SHORTNAME_EN, DEMO_FULLNAME_EN);
+$sr_id = demo_restore_course(DEMO_MBZ_SR, DEMO_SHORTNAME_SR, DEMO_FULLNAME_SR);
 
-    // Settings and CSS are always updated so design refinements apply on reset too.
-    demo_settings();
-    demo_upgrade_plugins();
-    demo_cleanup_obsolete_courses();
-    if ($command === 'setup') {
-        demo_languages();
-    }
+if ($en_id && $sr_id) {
+    demo_section_banner($en_id, 'en', $sr_id);
+    demo_section_banner($sr_id, 'sr', $en_id);
+} else if ($en_id) {
+    demo_section_banner_single($en_id);
+} else if ($sr_id) {
+    demo_section_banner_single($sr_id);
+}
 
-    $en_id = demo_restore_course(DEMO_MBZ_EN, DEMO_SHORTNAME_EN, DEMO_FULLNAME_EN);
-    $sr_id = demo_restore_course(DEMO_MBZ_SR, DEMO_SHORTNAME_SR, DEMO_FULLNAME_SR);
+if ($en_id) {
+    demo_users($en_id);
+}
+if ($sr_id) {
+    demo_users($sr_id);
+}
 
-    if ($en_id && $sr_id) {
-        demo_section_banner($en_id, 'en', $sr_id);
-        demo_section_banner($sr_id, 'sr', $en_id);
-    } else if ($en_id) {
-        demo_section_banner_single($en_id);
-    } else if ($sr_id) {
-        demo_section_banner_single($sr_id);
-    }
+if ($en_id && $sr_id) {
+    demo_frontpage($en_id, $sr_id);
+} else {
+    demo_frontpage_single($en_id ?: $sr_id);
+}
 
-    if ($en_id) {
-        demo_users($en_id);
-    }
-    if ($sr_id) {
-        demo_users($sr_id);
-    }
-
-    if ($en_id && $sr_id) {
-        demo_frontpage($en_id, $sr_id);
-    } else {
-        demo_frontpage_single($en_id ?: $sr_id);
-    }
-
-    purge_all_caches();
-    @file_put_contents(__DIR__ . '/demo_status.txt', "Finished successfully at " . date('Y-m-d H:i:s') . "\nEN: {$en_id}, SR: {$sr_id}\n", FILE_APPEND);
-    if ($en_id) {
-        echo "Done English: {$CFG->wwwroot}/course/view.php?id={$en_id}\n";
-    }
-    if ($sr_id) {
-        echo "Done Serbian: {$CFG->wwwroot}/course/view.php?id={$sr_id}\n";
-    }
-} catch (\Throwable $e) {
-    @file_put_contents(__DIR__ . '/demo_status.txt', "ERROR: " . $e->getMessage() . "\n" . $e->getTraceAsString() . "\n", FILE_APPEND);
-    throw $e;
+purge_all_caches();
+if ($en_id) {
+    echo "Done English: {$CFG->wwwroot}/course/view.php?id={$en_id}\n";
+}
+if ($sr_id) {
+    echo "Done Serbian: {$CFG->wwwroot}/course/view.php?id={$sr_id}\n";
 }
 
 /**
@@ -215,9 +205,6 @@ pre, code, kbd, samp {
 }
 
 /* AI-themed Neural Network background for login page */
-body.pagelayout-login #page .login-layout-left,
-body.login-layout #page .login-layout-left,
-#page.login-layout .login-layout-left,
 .login-layout-left {
     background-color: #090d16 !important;
     background-image: 
@@ -232,9 +219,6 @@ body.login-layout #page .login-layout-left,
 }
 
 /* Remove default watermark */
-body.pagelayout-login #page .login-layout-left::after,
-body.login-layout #page .login-layout-left::after,
-#page.login-layout .login-layout-left::after,
 .login-layout-left::after {
     display: none !important;
 }
@@ -297,13 +281,8 @@ body.login-layout #page .login-layout-left::after,
     background: linear-gradient(135deg, #3730a3 0%, #4338ca 100%) !important;
 }
 CSS;
-    // Clear theme_moove default login background image so custom CSS takes precedence
-    set_config('loginbgimg', '', 'theme_moove');
-    set_config('rawscss', $customcss, 'theme_moove');
-    set_config('scss', $customcss, 'theme_moove');
-    set_config('customcss', $customcss, 'theme_moove');
-    set_config('scss', $customcss, 'theme_boost');
     set_config('customcss', $customcss, 'theme_boost');
+    set_config('customcss', $customcss, 'theme_moove');
 
     // The shared demo accounts cannot change their password, profile or private files.
     $userrole = get_archetype_roles('user');
@@ -312,22 +291,51 @@ CSS;
     foreach (['moodle/user:changeownpassword', 'moodle/user:editownprofile', 'moodle/user:manageownfiles'] as $cap) {
         assign_capability($cap, CAP_PROHIBIT, $userrole->id, $system->id, true);
     }
+    // Set native theme_moove login background image
+    demo_set_login_background();
     echo "settings and custom CSS done\n";
 }
 
 /**
- * Unpacks the latest tiny_aisim 0.10.0 plugin package if present.
+ * Sets the theme_moove login background image natively in Moodle File Storage
+ * and directly on disk to completely replace the default office photo.
  */
-function demo_upgrade_plugins(): void {
+function demo_set_login_background(): void {
     global $CFG;
-    $zipfile = __DIR__ . '/tiny_aisim-0.10.0.zip';
-    if (file_exists($zipfile) && class_exists('ZipArchive')) {
-        $zip = new \ZipArchive();
-        if ($zip->open($zipfile) === true) {
-            $dest = $CFG->dirroot . '/lib/editor/tiny/plugins';
-            $zip->extractTo($dest);
-            $zip->close();
-            echo "Extracted tiny_aisim-0.10.0 to {$dest}/aisim\n";
+    $bgfile = __DIR__ . '/login_bg.png';
+    if (!file_exists($bgfile)) {
+        echo "login_bg.png not found\n";
+        return;
+    }
+
+    try {
+        $fs = get_file_storage();
+        $syscontext = \context_system::instance();
+        $filerecord = [
+            'contextid' => $syscontext->id,
+            'component' => 'theme_moove',
+            'filearea' => 'loginbgimg',
+            'itemid' => 0,
+            'filepath' => '/',
+            'filename' => 'login_bg.png',
+        ];
+        $fs->delete_area_files($syscontext->id, 'theme_moove', 'loginbgimg');
+        $fs->create_file_from_pathname($filerecord, $bgfile);
+        set_config('loginbgimg', 'login_bg.png', 'theme_moove');
+        echo "theme_moove loginbgimg set in file storage\n";
+    } catch (\Throwable $e) {
+        echo "Could not set loginbgimg in file storage: " . $e->getMessage() . "\n";
+    }
+
+    // Also overwrite default theme pix files on disk if present
+    $pix_candidates = [
+        $CFG->dirroot . '/theme/moove/pix/login_background.jpg',
+        $CFG->dirroot . '/theme/moove/pix/login_background.png',
+    ];
+    foreach ($pix_candidates as $pix) {
+        if (file_exists($pix)) {
+            @copy($bgfile, $pix);
+            echo "Replaced default pix on disk: {$pix}\n";
         }
     }
 }

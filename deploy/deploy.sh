@@ -32,6 +32,9 @@ cp aisim-demo-sr.mbz "${TARGET_DIR}/"
 if [ -f tiny_aisim-0.10.0.zip ]; then
     cp tiny_aisim-0.10.0.zip "${TARGET_DIR}/"
 fi
+if [ -f login_bg.png ]; then
+    cp login_bg.png "${TARGET_DIR}/"
+fi
 
 echo "[$(date -Iseconds)] Running plugin upgrades if any..."
 /usr/bin/php "${TARGET_DIR}/admin/cli/upgrade.php" --non-interactive || true

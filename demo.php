@@ -57,6 +57,7 @@ if (!in_array($command, ['setup', 'reset'], true)) {
 
 // Settings and CSS are always updated so design refinements apply on reset too.
 demo_settings();
+demo_cleanup_obsolete_courses();
 if ($command === 'setup') {
     demo_languages();
 }
@@ -92,6 +93,20 @@ if ($en_id) {
 }
 if ($sr_id) {
     echo "Done Serbian: {$CFG->wwwroot}/course/view.php?id={$sr_id}\n";
+}
+
+/**
+ * Removes any leftover cloned courses from CodeLab or Algorithm so only AISim courses remain.
+ */
+function demo_cleanup_obsolete_courses(): void {
+    global $DB;
+    $obsolete = ['CODELAB-DEMO', 'CODELAB-DEMO-SR', 'ALGORITHM-DEMO', 'ALGORITHM-DEMO-SR'];
+    foreach ($obsolete as $shortname) {
+        if ($course = $DB->get_record('course', ['shortname' => $shortname])) {
+            delete_course($course, false);
+            echo "Deleted obsolete course: {$shortname}\n";
+        }
+    }
 }
 
 /**

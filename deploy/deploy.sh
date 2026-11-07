@@ -4,7 +4,8 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$DIR"
 
 echo "[$(date -Iseconds)] Pulling latest demo files from GitHub..."
-git pull origin main
+git fetch origin main
+git reset --hard origin/main
 
 # Locate Moodle directory
 if [ -n "$MOODLE_DIR" ] && [ -d "$MOODLE_DIR" ]; then

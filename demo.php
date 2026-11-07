@@ -53,47 +53,56 @@ if (!in_array($command, ['setup', 'reset'], true)) {
     fwrite(STDERR, "Usage: php demo.php setup|reset\n");
     exit(1);
 }
-\core\session\manager::set_user(get_admin());
 
-// Settings and CSS are always updated so design refinements apply on reset too.
-demo_settings();
-demo_upgrade_plugins();
-demo_cleanup_obsolete_courses();
-if ($command === 'setup') {
-    demo_languages();
-}
+@file_put_contents(__DIR__ . '/demo_status.txt', "Started {$command} at " . date('Y-m-d H:i:s') . "\n");
 
-$en_id = demo_restore_course(DEMO_MBZ_EN, DEMO_SHORTNAME_EN, DEMO_FULLNAME_EN);
-$sr_id = demo_restore_course(DEMO_MBZ_SR, DEMO_SHORTNAME_SR, DEMO_FULLNAME_SR);
+try {
+    \core\session\manager::set_user(get_admin());
 
-if ($en_id && $sr_id) {
-    demo_section_banner($en_id, 'en', $sr_id);
-    demo_section_banner($sr_id, 'sr', $en_id);
-} else if ($en_id) {
-    demo_section_banner_single($en_id);
-} else if ($sr_id) {
-    demo_section_banner_single($sr_id);
-}
+    // Settings and CSS are always updated so design refinements apply on reset too.
+    demo_settings();
+    demo_upgrade_plugins();
+    demo_cleanup_obsolete_courses();
+    if ($command === 'setup') {
+        demo_languages();
+    }
 
-if ($en_id) {
-    demo_users($en_id);
-}
-if ($sr_id) {
-    demo_users($sr_id);
-}
+    $en_id = demo_restore_course(DEMO_MBZ_EN, DEMO_SHORTNAME_EN, DEMO_FULLNAME_EN);
+    $sr_id = demo_restore_course(DEMO_MBZ_SR, DEMO_SHORTNAME_SR, DEMO_FULLNAME_SR);
 
-if ($en_id && $sr_id) {
-    demo_frontpage($en_id, $sr_id);
-} else {
-    demo_frontpage_single($en_id ?: $sr_id);
-}
+    if ($en_id && $sr_id) {
+        demo_section_banner($en_id, 'en', $sr_id);
+        demo_section_banner($sr_id, 'sr', $en_id);
+    } else if ($en_id) {
+        demo_section_banner_single($en_id);
+    } else if ($sr_id) {
+        demo_section_banner_single($sr_id);
+    }
 
-purge_all_caches();
-if ($en_id) {
-    echo "Done English: {$CFG->wwwroot}/course/view.php?id={$en_id}\n";
-}
-if ($sr_id) {
-    echo "Done Serbian: {$CFG->wwwroot}/course/view.php?id={$sr_id}\n";
+    if ($en_id) {
+        demo_users($en_id);
+    }
+    if ($sr_id) {
+        demo_users($sr_id);
+    }
+
+    if ($en_id && $sr_id) {
+        demo_frontpage($en_id, $sr_id);
+    } else {
+        demo_frontpage_single($en_id ?: $sr_id);
+    }
+
+    purge_all_caches();
+    @file_put_contents(__DIR__ . '/demo_status.txt', "Finished successfully at " . date('Y-m-d H:i:s') . "\nEN: {$en_id}, SR: {$sr_id}\n", FILE_APPEND);
+    if ($en_id) {
+        echo "Done English: {$CFG->wwwroot}/course/view.php?id={$en_id}\n";
+    }
+    if ($sr_id) {
+        echo "Done Serbian: {$CFG->wwwroot}/course/view.php?id={$sr_id}\n";
+    }
+} catch (\Throwable $e) {
+    @file_put_contents(__DIR__ . '/demo_status.txt', "ERROR: " . $e->getMessage() . "\n" . $e->getTraceAsString() . "\n", FILE_APPEND);
+    throw $e;
 }
 
 /**
@@ -290,10 +299,11 @@ body.login-layout #page .login-layout-left::after,
 CSS;
     // Clear theme_moove default login background image so custom CSS takes precedence
     set_config('loginbgimg', '', 'theme_moove');
-    set_config('scss', $customcss, 'theme_boost');
+    set_config('rawscss', $customcss, 'theme_moove');
     set_config('scss', $customcss, 'theme_moove');
-    set_config('customcss', $customcss, 'theme_boost');
     set_config('customcss', $customcss, 'theme_moove');
+    set_config('scss', $customcss, 'theme_boost');
+    set_config('customcss', $customcss, 'theme_boost');
 
     // The shared demo accounts cannot change their password, profile or private files.
     $userrole = get_archetype_roles('user');

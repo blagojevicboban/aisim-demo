@@ -9,6 +9,10 @@ git pull origin main
 # Locate Moodle directory
 if [ -n "$MOODLE_DIR" ] && [ -d "$MOODLE_DIR" ]; then
     TARGET_DIR="$MOODLE_DIR"
+elif [ -f "/home/aisim/public_html/moodle/config.php" ]; then
+    TARGET_DIR="/home/aisim/public_html/moodle"
+elif [ -f "/home/aisim/public_html/config.php" ]; then
+    TARGET_DIR="/home/aisim/public_html"
 elif [ -d "/home/aisim/public_html/moodle" ]; then
     TARGET_DIR="/home/aisim/public_html/moodle"
 elif [ -d "/home/aisim/public_html" ]; then
@@ -31,3 +35,4 @@ fi
 echo "[$(date -Iseconds)] Running demo.php reset..."
 /usr/bin/php "${TARGET_DIR}/demo.php" reset
 echo "[$(date -Iseconds)] AISim demo deploy finished successfully!"
+pm2 reload aisim-webhook >/dev/null 2>&1 || true

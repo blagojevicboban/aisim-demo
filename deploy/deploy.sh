@@ -5,7 +5,8 @@ cd "$DIR"
 
 echo "[$(date -Iseconds)] Pulling latest demo files from GitHub..."
 git fetch origin main
-git reset --hard origin/main
+git reset --hard FETCH_HEAD
+git clean -fd
 
 # Locate Moodle directory
 if [ -n "$MOODLE_DIR" ] && [ -d "$MOODLE_DIR" ]; then
@@ -43,7 +44,7 @@ echo "[$(date -Iseconds)] Running plugin upgrades if any..."
 echo "[$(date -Iseconds)] Purging Moodle caches..."
 /usr/bin/php "${TARGET_DIR}/admin/cli/purge_caches.php" || true
 
-echo "[$(date -Iseconds)] Running demo.php reset..."
-/usr/bin/php "${TARGET_DIR}/demo.php" reset
-echo "[$(date -Iseconds)] AISim demo deploy finished successfully!"
+echo "[$(date -Iseconds)] Running demo.php reset..." | tee "${TARGET_DIR}/deploy_log.txt"
+/usr/bin/php "${TARGET_DIR}/demo.php" reset 2>&1 | tee -a "${TARGET_DIR}/deploy_log.txt"
+echo "[$(date -Iseconds)] AISim demo deploy finished successfully!" | tee -a "${TARGET_DIR}/deploy_log.txt"
 pm2 reload aisim-webhook >/dev/null 2>&1 || true

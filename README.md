@@ -15,6 +15,8 @@ Live demo site: [https://aisim.tsp.edu.rs/](https://aisim.tsp.edu.rs/)
 
 1. **`AISIM-DEMO`**: AI for VET: interactive simulations (English)
 2. **`AISIM-DEMO-SR`**: AI za VET: interaktivne simulacije (srpski)
+3. **`AISIM-DEMO-SK`**: AI pre OVP: interaktívne simulácie (slovenčina)
+4. **`AISIM-DEMO-PT`**: IA para EFP: simulações interativas (português)
 
 Each course contains:
 - **9 Educational Lesson Pages** with embedded live simulations across 4 thematic areas:

@@ -17,9 +17,10 @@
 /**
  * Public demo site of the AI for VET (AISim) plugins (aisim.tsp.edu.rs).
  *
- * Put this file, aisim-demo.mbz and aisim-demo-sr.mbz in the Moodle folder, next to config.php (not in public/,
- * so the web cannot run it), and run it from the command line or a cron job:
- *   php demo.php setup   once: site settings, language packs, demo accounts, both demo courses
+ * Put this file, aisim-demo.mbz, aisim-demo-sr.mbz, aisim-demo-sk.mbz and aisim-demo-pt.mbz
+ * in the Moodle folder, next to config.php (not in public/, so the web cannot run it),
+ * and run it from the command line or a cron job:
+ *   php demo.php setup   once: site settings, language packs, demo accounts, 4 demo courses
  *   php demo.php reset   every night: demo courses from backup again (posts, attempts and changes are gone)
  *
  * @copyright  2026 Boban Blagojević
@@ -42,6 +43,14 @@ const DEMO_SHORTNAME_SR = 'AISIM-DEMO-SR';
 const DEMO_FULLNAME_SR = 'AI za VET: interaktivne simulacije (srpski)';
 const DEMO_MBZ_SR = 'aisim-demo-sr.mbz';
 
+const DEMO_SHORTNAME_SK = 'AISIM-DEMO-SK';
+const DEMO_FULLNAME_SK = 'AI pre OVP: interaktívne simulácie (slovenčina)';
+const DEMO_MBZ_SK = 'aisim-demo-sk.mbz';
+
+const DEMO_SHORTNAME_PT = 'AISIM-DEMO-PT';
+const DEMO_FULLNAME_PT = 'IA para EFP: simulações interativas (português)';
+const DEMO_MBZ_PT = 'aisim-demo-pt.mbz';
+
 const DEMO_PASSWORD = 'Demo-2026';
 const DEMO_USERS = [
     'teacher' => ['firstname' => 'Demo', 'lastname' => 'Teacher', 'role' => 'editingteacher'],
@@ -58,41 +67,35 @@ if (!in_array($command, ['setup', 'reset'], true)) {
 // Settings and CSS are always updated so design refinements apply on reset too.
 demo_settings();
 demo_cleanup_obsolete_courses();
-if ($command === 'setup') {
-    demo_languages();
-}
+
+// Language packs: install on setup, or automatically on reset if SK or PT are missing.
+demo_languages($command === 'setup');
 
 $en_id = demo_restore_course(DEMO_MBZ_EN, DEMO_SHORTNAME_EN, DEMO_FULLNAME_EN);
 $sr_id = demo_restore_course(DEMO_MBZ_SR, DEMO_SHORTNAME_SR, DEMO_FULLNAME_SR);
+$sk_id = demo_restore_course(DEMO_MBZ_SK, DEMO_SHORTNAME_SK, DEMO_FULLNAME_SK);
+$pt_id = demo_restore_course(DEMO_MBZ_PT, DEMO_SHORTNAME_PT, DEMO_FULLNAME_PT);
 
-if ($en_id && $sr_id) {
-    demo_section_banner($en_id, 'en', $sr_id);
-    demo_section_banner($sr_id, 'sr', $en_id);
-} else if ($en_id) {
-    demo_section_banner_single($en_id);
-} else if ($sr_id) {
-    demo_section_banner_single($sr_id);
+$course_map = array_filter([
+    'en' => $en_id,
+    'sr' => $sr_id,
+    'sk' => $sk_id,
+    'pt' => $pt_id,
+]);
+
+foreach ($course_map as $lang => $cid) {
+    demo_section_banner($cid, $lang, $course_map);
+    demo_users($cid);
 }
 
-if ($en_id) {
-    demo_users($en_id);
-}
-if ($sr_id) {
-    demo_users($sr_id);
-}
-
-if ($en_id && $sr_id) {
-    demo_frontpage($en_id, $sr_id);
-} else {
-    demo_frontpage_single($en_id ?: $sr_id);
+if (!empty($course_map)) {
+    demo_frontpage($course_map);
 }
 
 purge_all_caches();
-if ($en_id) {
-    echo "Done English: {$CFG->wwwroot}/course/view.php?id={$en_id}\n";
-}
-if ($sr_id) {
-    echo "Done Serbian: {$CFG->wwwroot}/course/view.php?id={$sr_id}\n";
+
+foreach ($course_map as $lang => $cid) {
+    echo "Done [{$lang}]: {$CFG->wwwroot}/course/view.php?id={$cid}\n";
 }
 
 /**
@@ -116,7 +119,8 @@ function demo_cleanup_obsolete_courses(): void {
 function demo_settings(): void {
     $settings = [
         'noemailever' => 1,         // Nothing is ever mailed.
-        'registerauth' => '',       // No self registration.
+        'registerauth' => '',       // No self-registration.
+        'auth' => 'manual',
         'guestloginbutton' => 1,    // "Access as a guest" on the login page.
         'forceclean' => 0,          // Keep data-aisim attributes intact for simulation engines.
         'langmenu' => 1,
@@ -169,64 +173,59 @@ body {
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     color: #1e293b;
 }
-.card {
-    border-radius: 14px;
-    border: none;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+.btn-primary {
+    background-color: #4f46e5 !important;
+    border-color: #4338ca !important;
+}
+.btn-primary:hover {
+    background-color: #4338ca !important;
+    border-color: #3730a3 !important;
+}
+.badge.bg-primary {
+    background-color: #4f46e5 !important;
+}
+.text-primary {
+    color: #4f46e5 !important;
+}
+
+/* Simulation card container polish */
+.aisim-lesson-wrap .card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .demo-course-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
 }
 .demo-course-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 14px 30px rgba(0,0,0,0.12) !important;
-}
-.badge {
-    font-weight: 600;
-    letter-spacing: 0.02em;
-}
-pre, code, kbd, samp {
-    font-family: 'Fira Code', Consolas, 'Courier New', monospace;
-}
-.navbar-bootswatch, .navbar-light {
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-}
-#page-footer {
-    background: #090d16;
-    color: #94a3b8;
-    padding-top: 2rem;
-    padding-bottom: 2rem;
-}
-#page-footer a {
-    color: #818cf8;
-}
-.aisim-container {
-    border-radius: 12px;
+    box-shadow: 0 16px 32px -8px rgba(79, 70, 229, 0.18) !important;
 }
 
-/* AI-themed Neural Network background for login page */
-.login-layout-left {
-    background-color: #090d16 !important;
-    background-image: 
-        radial-gradient(at 15% 15%, rgba(99, 102, 241, 0.45) 0px, transparent 50%),
-        radial-gradient(at 85% 25%, rgba(56, 189, 248, 0.4) 0px, transparent 45%),
-        radial-gradient(at 50% 85%, rgba(67, 56, 202, 0.5) 0px, transparent 60%),
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 800 800'%3E%3Cg fill='none' stroke='rgba(99,102,241,0.22)' stroke-width='1.5'%3E%3Cpath d='M100 200 L250 120 L400 220 L550 140 L700 240 M250 120 L400 350 L250 500 M400 220 L550 380 L400 550 M550 140 L700 360 L550 520 M100 450 L250 500 L400 550 L550 520 L700 600 M250 500 L400 680 L550 520'/%3E%3Ccircle cx='100' cy='200' r='6' fill='%2338bdf8' opacity='0.7'/%3E%3Ccircle cx='250' cy='120' r='8' fill='%23818cf8' opacity='0.8'/%3E%3Ccircle cx='400' cy='220' r='7' fill='%236366f1' opacity='0.8'/%3E%3Ccircle cx='550' cy='140' r='8' fill='%2338bdf8' opacity='0.8'/%3E%3Ccircle cx='700' cy='240' r='6' fill='%23818cf8' opacity='0.7'/%3E%3Ccircle cx='400' cy='350' r='9' fill='%23a855f7' opacity='0.8'/%3E%3Ccircle cx='550' cy='380' r='7' fill='%236366f1' opacity='0.8'/%3E%3Ccircle cx='700' cy='360' r='6' fill='%2338bdf8' opacity='0.7'/%3E%3Ccircle cx='100' cy='450' r='6' fill='%23818cf8' opacity='0.7'/%3E%3Ccircle cx='250' cy='500' r='8' fill='%236366f1' opacity='0.8'/%3E%3Ccircle cx='400' cy='550' r='9' fill='%23818cf8' opacity='0.8'/%3E%3Ccircle cx='550' cy='520' r='8' fill='%2338bdf8' opacity='0.8'/%3E%3Ccircle cx='700' cy='600' r='6' fill='%23a855f7' opacity='0.7'/%3E%3Ccircle cx='400' cy='680' r='7' fill='%236366f1' opacity='0.8'/%3E%3C/g%3E%3C/svg%3E"),
-        linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%) !important;
-    background-size: cover !important;
-    background-position: center !important;
-    position: relative !important;
+/* Auth page card styling */
+.login-wrapper {
+    background: radial-gradient(circle at top right, #1e1b4b 0%, #0f172a 100%) !important;
+    min-height: 100vh;
+}
+.login-container {
+    background: transparent !important;
+}
+.login-box {
+    background: #ffffff !important;
+    border-radius: 1.25rem !important;
+    box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.25) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    padding: 2.5rem !important;
 }
 
-/* Remove default watermark */
-.login-layout-left::after {
-    display: none !important;
+/* Fix Moove theme login split container so instructions display gracefully */
+.login-layout-split {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
-/* Clean transparent content holder */
 .login-layout-left-content {
     background: transparent !important;
-    border: none !important;
     box-shadow: none !important;
     padding: 0 !important;
     max-width: 480px !important;
@@ -289,7 +288,12 @@ CSS;
     $userrole = get_archetype_roles('user');
     $userrole = reset($userrole);
     $system = context_system::instance();
-    foreach (['moodle/user:changeownpassword', 'moodle/user:editownprofile', 'moodle/user:manageownfiles'] as $cap) {
+    foreach ([
+        'moodle/user:changeownpassword',
+        'moodle/user:editownprofile',
+        'moodle/user:manageownfiles',
+        'moodle/user:deleteownprofile',
+    ] as $cap) {
         assign_capability($cap, CAP_PROHIBIT, $userrole->id, $system->id, true);
     }
 
@@ -329,15 +333,25 @@ function demo_ensure_tiny_aisim(): void {
 }
 
 /**
- * Serbian language packs (Latin and Cyrillic).
+ * Installs language packs (Serbian Latin/Cyrillic, Slovak, Portuguese).
  */
-function demo_languages(): void {
+function demo_languages(bool $force = false): void {
     try {
-        $controller = new \tool_langimport\controller();
-        $controller->install_languagepacks(['sr_lt', 'sr_cr']);
-        echo "language packs: " . implode(' ', $controller->info) . "\n";
+        $needed = ['sr_lt', 'sr_cr', 'sk', 'pt'];
+        $to_install = $needed;
+        if (!$force && function_exists('get_string_manager')) {
+            $installed = get_string_manager()->get_list_of_translations();
+            $to_install = array_values(array_filter($needed, fn($lang) => !isset($installed[$lang])));
+        }
+        if (!empty($to_install)) {
+            $controller = new \tool_langimport\controller();
+            $controller->install_languagepacks($to_install);
+            echo "installed language packs: " . implode(' ', $to_install) . "\n";
+        } else {
+            echo "language packs already installed\n";
+        }
     } catch (\Throwable $e) {
-        echo "language packs not installed: " . $e->getMessage() . "\n";
+        echo "language packs warning: " . $e->getMessage() . "\n";
     }
 }
 
@@ -395,83 +409,116 @@ function demo_restore_course(string $filename, string $shortname, string $fullna
 }
 
 /**
- * Section 0 banner with 4-step guided tour, guide button, and language switcher button.
+ * Section 0 banner with 4-step guided tour, guide button, and 4-language navigation pills.
  */
-function demo_section_banner(int $courseid, string $lang, int $other_courseid): void {
+function demo_section_banner(int $courseid, string $current_lang, array $course_map): void {
     global $CFG, $DB;
-    $other_url = "{$CFG->wwwroot}/course/view.php?id={$other_courseid}";
 
     // Locate the Guide page in this course
     $guide_btn = '';
-    $guide_page = $DB->get_record_select('page', "course = ? AND (name LIKE ? OR name LIKE ?)", [$courseid, '%Guide%', '%Vodič%']);
+    $guide_page = $DB->get_record_select('page', "course = ? AND (name LIKE ? OR name LIKE ? OR name LIKE ? OR name LIKE ?)", [
+        $courseid, '%Guide%', '%Vodič%', '%Príručka%', '%Guia%'
+    ]);
     if ($guide_page) {
         $guide_cm = get_coursemodule_from_instance('page', $guide_page->id, $courseid);
         if ($guide_cm) {
             $guide_url = "{$CFG->wwwroot}/mod/page/view.php?id={$guide_cm->id}";
-            $btn_text = ($lang === 'en') ? '📖 User &amp; Teacher Guide →' : '📖 Vodič za simulacije →';
+            $guide_labels = [
+                'en' => '📖 User &amp; Teacher Guide →',
+                'sr' => '📖 Vodič za simulacije →',
+                'sk' => '📖 Príručka pre simulácie →',
+                'pt' => '📖 Guia de simulações →',
+            ];
+            $btn_text = $guide_labels[$current_lang] ?? '📖 Guide →';
             $guide_btn = '<a href="' . $guide_url . '" class="btn btn-sm btn-warning text-dark rounded-pill px-3 fw-bold shadow-sm" style="backdrop-filter: blur(4px);">' . $btn_text . '</a>';
         }
     }
 
-    if ($lang === 'en') {
-        $banner = '<div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: linear-gradient(135deg, #090d16 0%, #1e1b4b 60%, #4338ca 100%); color: #ffffff;">'
-            . '<div class="card-body p-4">'
-            . '<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">'
-            . '<div class="d-flex flex-wrap align-items-center gap-2">'
-            . '<span class="badge bg-white bg-opacity-25 text-white px-3 py-2 rounded-pill fw-normal" style="backdrop-filter: blur(4px);">✨ AI for VET Demo · English</span>'
-            . $guide_btn
-            . '</div>'
-            . '<a href="' . $other_url . '" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold" style="backdrop-filter: blur(4px);">🇷🇸 Prebaci na srpski kurs →</a>'
-            . '</div>'
-            . '<h2 class="fw-bold text-white mb-2">Welcome to AI for VET Simulations!</h2>'
-            . '<p class="mb-3" style="color: rgba(255,255,255,0.9) !important; font-size: 1.05rem;">Experience 9 interactive Machine Learning &amp; AI simulations running directly in your browser. Follow this 4-step tour to test all features:</p>'
-            . '<div class="row g-2 mb-3">'
-            . '<div class="col-md-3 col-6"><div class="p-2 px-3 rounded-3 bg-black bg-opacity-30 h-100"><div class="fw-bold text-warning small mb-1">1. OPTIMIZATION</div><div class="small opacity-90">Tune learning rates in Gradient Descent &amp; watch convergence</div></div></div>'
-            . '<div class="col-md-3 col-6"><div class="p-2 px-3 rounded-3 bg-black bg-opacity-30 h-100"><div class="fw-bold text-info small mb-1">2. NEURAL NETS</div><div class="small opacity-90">Add hidden layers to solve XOR &amp; train in real-time</div></div></div>'
-            . '<div class="col-md-3 col-6"><div class="p-2 px-3 rounded-3 bg-black bg-opacity-30 h-100"><div class="fw-bold text-success small mb-1">3. VISION &amp; RL</div><div class="small opacity-90">Inspect 3&times;3 convolution kernels &amp; train Q-learning agents</div></div></div>'
-            . '<div class="col-md-3 col-6"><div class="p-2 px-3 rounded-3 bg-black bg-opacity-30 h-100"><div class="fw-bold text-light small mb-1">4. AUTO-GRADED QUIZ</div><div class="small opacity-90">Solve practical simulation challenges with instant feedback</div></div></div>'
-            . '</div>'
-            . '<div class="d-flex flex-wrap align-items-center justify-content-between pt-2 border-top border-white border-opacity-25 small opacity-90">'
-            . '<div><strong>Demo Accounts:</strong> <code>student</code> or <code>teacher</code> (password: <code>Demo-2026</code>) · or explore as Guest</div>'
-            . '<div>Resets nightly at 03:30 · Project: <a href="https://aiforvet.eu/" target="_blank" class="text-white text-decoration-underline">Erasmus+ AI for VET</a></div>'
-            . '</div></div></div>';
-    } else {
-        $banner = '<div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: linear-gradient(135deg, #090d16 0%, #1e1b4b 60%, #4338ca 100%); color: #ffffff;">'
-            . '<div class="card-body p-4">'
-            . '<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">'
-            . '<div class="d-flex flex-wrap align-items-center gap-2">'
-            . '<span class="badge bg-white bg-opacity-25 text-white px-3 py-2 rounded-pill fw-normal" style="backdrop-filter: blur(4px);">✨ AI for VET Demo · Srpski</span>'
-            . $guide_btn
-            . '</div>'
-            . '<a href="' . $other_url . '" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold" style="backdrop-filter: blur(4px);">🌐 Switch to English Course →</a>'
-            . '</div>'
-            . '<h2 class="fw-bold text-white mb-2">Dobrodošli u AI for VET simulacije!</h2>'
-            . '<p class="mb-3" style="color: rgba(255,255,255,0.9) !important; font-size: 1.05rem;">Isprobajte 9 interaktivnih simulacija mašinskog učenja koje rade direktno u pregledaču. Upoznajte sistem u 4 koraka:</p>'
-            . '<div class="row g-2 mb-3">'
-            . '<div class="col-md-3 col-6"><div class="p-2 px-3 rounded-3 bg-black bg-opacity-30 h-100"><div class="fw-bold text-warning small mb-1">1. OPTIMIZACIJA</div><div class="small opacity-90">Podešavajte stopu učenja gradijentnog spusta i pratite krive</div></div></div>'
-            . '<div class="col-md-3 col-6"><div class="p-2 px-3 rounded-3 bg-black bg-opacity-30 h-100"><div class="fw-bold text-info small mb-1">2. NEURONSKE MREŽE</div><div class="small opacity-90">Dodajte skrivene slojeve za XOR problem i obučavajte model</div></div></div>'
-            . '<div class="col-md-3 col-6"><div class="p-2 px-3 rounded-3 bg-black bg-opacity-30 h-100"><div class="fw-bold text-success small mb-1">3. RAČUNARSKI VID &amp; RL</div><div class="small opacity-90">Ispitujte 3&times;3 konvolucione kernele i vodite Q-learning agenta</div></div></div>'
-            . '<div class="col-md-3 col-6"><div class="p-2 px-3 rounded-3 bg-black bg-opacity-30 h-100"><div class="fw-bold text-light small mb-1">4. OCENJIVANI KVIZ</div><div class="small opacity-90">Rešavajte simulacione zadatke sa automatskim bodovanjem</div></div></div>'
-            . '</div>'
-            . '<div class="d-flex flex-wrap align-items-center justify-content-between pt-2 border-top border-white border-opacity-25 small opacity-90">'
-            . '<div><strong>Demo nalozi:</strong> <code>student</code> ili <code>teacher</code> (lozinka: <code>Demo-2026</code>) · ili pristupite kao Gost</div>'
-            . '<div>Resetuje se svake noći u 03:30 · Projekat: <a href="https://aiforvet.eu/" target="_blank" class="text-white text-decoration-underline">Erasmus+ AI for VET</a></div>'
-            . '</div></div></div>';
-    }
-    $DB->set_field('course_sections', 'summary', $banner, ['course' => $courseid, 'section' => 0]);
-    $DB->set_field('course_sections', 'summaryformat', FORMAT_HTML, ['course' => $courseid, 'section' => 0]);
-}
+    // Language pills
+    $lang_info = [
+        'en' => ['flag' => '🇬🇧', 'name' => 'English', 'title' => 'Switch to English course'],
+        'sr' => ['flag' => '🇷🇸', 'name' => 'Srpski', 'title' => 'Prebaci na kurs na srpskom'],
+        'sk' => ['flag' => '🇸🇰', 'name' => 'Slovenčina', 'title' => 'Prepnúť na kurz v slovenčine'],
+        'pt' => ['flag' => '🇵🇹', 'name' => 'Português', 'title' => 'Mudar para o curso em português'],
+    ];
 
-/**
- * Fallback section banner when only one course exists.
- */
-function demo_section_banner_single(int $courseid): void {
-    global $DB;
+    $switch_links = '';
+    foreach ($course_map as $l => $cid) {
+        if ($l === $current_lang) {
+            continue;
+        }
+        $info = $lang_info[$l] ?? ['flag' => '🌐', 'name' => strtoupper($l), 'title' => ''];
+        $url = "{$CFG->wwwroot}/course/view.php?id={$cid}";
+        $switch_links .= '<a href="' . $url . '" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold text-white" style="backdrop-filter: blur(4px); border-color: rgba(255,255,255,0.4);" title="' . $info['title'] . '">' . $info['flag'] . ' ' . $info['name'] . '</a> ';
+    }
+
+    $banner_data = [
+        'en' => [
+            'badge' => '✨ AI for VET Demo · English',
+            'title' => 'Welcome to AI for VET Simulations!',
+            'lead' => 'Experience 9 interactive Machine Learning &amp; AI simulations running directly in your browser. Follow this 4-step tour to test all features:',
+            's1' => '1. OPTIMIZATION', 's1_desc' => 'Tune learning rates in Gradient Descent &amp; watch convergence',
+            's2' => '2. NEURAL NETS', 's2_desc' => 'Add hidden layers to solve XOR &amp; train in real-time',
+            's3' => '3. VISION &amp; RL', 's3_desc' => 'Inspect 3&times;3 convolution kernels &amp; train Q-learning agents',
+            's4' => '4. AUTO-GRADED QUIZ', 's4_desc' => 'Solve practical simulation challenges with instant feedback',
+            'accounts' => '<div><strong>Demo Accounts:</strong> <code>student</code> or <code>teacher</code> (password: <code>Demo-2026</code>) · or explore as Guest</div>',
+        ],
+        'sr' => [
+            'badge' => '✨ AI for VET Demo · Srpski',
+            'title' => 'Dobrodošli u AI for VET simulacije!',
+            'lead' => 'Isprobajte 9 interaktivnih simulacija mašinskog učenja koje rade direktno u pregledaču. Upoznajte sistem u 4 koraka:',
+            's1' => '1. OPTIMIZACIJA', 's1_desc' => 'Podešavajte stopu učenja gradijentnog spusta i pratite krive',
+            's2' => '2. NEURONSKE MREŽE', 's2_desc' => 'Dodajte skrivene slojeve za XOR problem i obučavajte model',
+            's3' => '3. RAČUNARSKI VID &amp; RL', 's3_desc' => 'Ispitujte 3&times;3 konvolucione kernele i vodite Q-learning agenta',
+            's4' => '4. OCENJIVANI KVIZ', 's4_desc' => 'Rešavajte simulacione zadatke sa automatskim bodovanjem',
+            'accounts' => '<div><strong>Demo nalozi:</strong> <code>student</code> ili <code>teacher</code> (lozinka: <code>Demo-2026</code>) · ili pristupite kao Gost</div>',
+        ],
+        'sk' => [
+            'badge' => '✨ AI pre OVP Demo · Slovenčina',
+            'title' => 'Vitajte v simuláciách AI pre OVP!',
+            'lead' => 'Vyskúšajte 9 interaktívnych simulácií strojového učenia priamo vo vašom prehliadači. Zoznámte sa so systémom v 4 krokoch:',
+            's1' => '1. OPTIMALIZÁCIA', 's1_desc' => 'Nastavujte rýchlosť učenia gradientného zostupu a sledujte klesanie',
+            's2' => '2. NEURÓNOVÉ SIETE', 's2_desc' => 'Pridávajte skryté vrstvy pre problém XOR a trénujte model',
+            's3' => '3. POČÍTAČOVÉ VIDENIE &amp; RL', 's3_desc' => 'Skúmajte 3&times;3 konvolučné jadrá a veďte Q-learning agenta',
+            's4' => '4. HODNOTENÝ TEST', 's4_desc' => 'Riešte praktické simulované úlohy s okamžitým hodnotením',
+            'accounts' => '<div><strong>Demo účty:</strong> <code>student</code> alebo <code>teacher</code> (heslo: <code>Demo-2026</code>) · alebo vstúpte ako Hosť</div>',
+        ],
+        'pt' => [
+            'badge' => '✨ IA para EFP Demo · Português',
+            'title' => 'Bem-vindo às simulações IA para EFP!',
+            'lead' => 'Experimente 9 simulações interativas de Machine Learning diretamente no seu navegador. Siga estas 4 etapas para explorar todas as funcionalidades:',
+            's1' => '1. OTIMIZAÇÃO', 's1_desc' => 'Ajuste a taxa de aprendizagem na descida do gradiente e veja a convergência',
+            's2' => '2. REDES NEURONAIS', 's2_desc' => 'Adicione camadas ocultas para o problema XOR e treine o modelo',
+            's3' => '3. VISÃO &amp; RL', 's3_desc' => 'Inspecione kernels de convolução 3&times;3 e treine agentes de Q-learning',
+            's4' => '4. TESTE AVALIADO', 's4_desc' => 'Resolva desafios práticos com simulações e avaliação imediata',
+            'accounts' => '<div><strong>Contas demo:</strong> <code>student</code> ou <code>teacher</code> (palavra-passe: <code>Demo-2026</code>) · ou explore como Visitante</div>',
+        ],
+    ];
+
+    $b = $banner_data[$current_lang] ?? $banner_data['en'];
+
     $banner = '<div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: linear-gradient(135deg, #090d16 0%, #1e1b4b 60%, #4338ca 100%); color: #ffffff;">'
         . '<div class="card-body p-4">'
-        . '<h2 class="fw-bold text-white mb-2">Welcome to AI for VET Simulations!</h2>'
-        . '<p class="mb-3 text-white-50">Explore 9 interactive simulations across gradient descent, confusion matrices, neural networks, computer vision, and reinforcement learning.</p>'
-        . '</div></div>';
+        . '<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">'
+        . '<div class="d-flex flex-wrap align-items-center gap-2">'
+        . '<span class="badge bg-white bg-opacity-25 text-white px-3 py-2 rounded-pill fw-normal" style="backdrop-filter: blur(4px);">' . $b['badge'] . '</span>'
+        . $guide_btn
+        . '</div>'
+        . '<div class="d-flex flex-wrap align-items-center gap-1">' . $switch_links . '</div>'
+        . '</div>'
+        . '<h2 class="fw-bold text-white mb-2">' . $b['title'] . '</h2>'
+        . '<p class="mb-3" style="color: rgba(255,255,255,0.9) !important; font-size: 1.05rem;">' . $b['lead'] . '</p>'
+        . '<div class="row g-2 mb-3">'
+        . '<div class="col-md-3 col-6"><div class="p-2 px-3 rounded-3 bg-black bg-opacity-30 h-100"><div class="fw-bold text-warning small mb-1">' . $b['s1'] . '</div><div class="small opacity-90">' . $b['s1_desc'] . '</div></div></div>'
+        . '<div class="col-md-3 col-6"><div class="p-2 px-3 rounded-3 bg-black bg-opacity-30 h-100"><div class="fw-bold text-info small mb-1">' . $b['s2'] . '</div><div class="small opacity-90">' . $b['s2_desc'] . '</div></div></div>'
+        . '<div class="col-md-3 col-6"><div class="p-2 px-3 rounded-3 bg-black bg-opacity-30 h-100"><div class="fw-bold text-success small mb-1">' . $b['s3'] . '</div><div class="small opacity-90">' . $b['s3_desc'] . '</div></div></div>'
+        . '<div class="col-md-3 col-6"><div class="p-2 px-3 rounded-3 bg-black bg-opacity-30 h-100"><div class="fw-bold text-light small mb-1">' . $b['s4'] . '</div><div class="small opacity-90">' . $b['s4_desc'] . '</div></div></div>'
+        . '</div>'
+        . '<div class="d-flex flex-wrap align-items-center justify-content-between pt-2 border-top border-white border-opacity-25 small opacity-90">'
+        . $b['accounts']
+        . '<div>Resetuje se svake noći u 03:30 · Projekat: <a href="https://aiforvet.eu/" target="_blank" class="text-white text-decoration-underline">Erasmus+ AI for VET</a></div>'
+        . '</div></div></div>';
+
     $DB->set_field('course_sections', 'summary', $banner, ['course' => $courseid, 'section' => 0]);
     $DB->set_field('course_sections', 'summaryformat', FORMAT_HTML, ['course' => $courseid, 'section' => 0]);
 }
@@ -512,28 +559,30 @@ function demo_users(int $courseid): void {
 }
 
 /**
- * Front page with live interactive neural network simulation, dual-language cards, and quick login actions.
+ * Front page with live interactive neural network simulation, 4-language cards, and quick login actions.
  */
-function demo_frontpage(int $en_id, int $sr_id): void {
+function demo_frontpage(array $course_map): void {
     global $CFG, $DB;
-    $en_url = "{$CFG->wwwroot}/course/view.php?id={$en_id}";
-    $sr_url = "{$CFG->wwwroot}/course/view.php?id={$sr_id}";
 
-    // Locate guides
-    $en_guide_url = "{$CFG->wwwroot}/course/view.php?id={$en_id}";
-    $sr_guide_url = "{$CFG->wwwroot}/course/view.php?id={$sr_id}";
-    $g_en = $DB->get_record_select('page', "course = ? AND name LIKE ?", [$en_id, '%Guide%']);
-    if ($g_en) {
-        $cm = get_coursemodule_from_instance('page', $g_en->id, $en_id);
-        if ($cm) {
-            $en_guide_url = "{$CFG->wwwroot}/mod/page/view.php?id={$cm->id}";
-        }
-    }
-    $g_sr = $DB->get_record_select('page', "course = ? AND name LIKE ?", [$sr_id, '%Vodič%']);
-    if ($g_sr) {
-        $cm = get_coursemodule_from_instance('page', $g_sr->id, $sr_id);
-        if ($cm) {
-            $sr_guide_url = "{$CFG->wwwroot}/mod/page/view.php?id={$cm->id}";
+    $en_id = $course_map['en'] ?? null;
+    $sr_id = $course_map['sr'] ?? null;
+    $sk_id = $course_map['sk'] ?? null;
+    $pt_id = $course_map['pt'] ?? null;
+
+    $en_url = $en_id ? "{$CFG->wwwroot}/course/view.php?id={$en_id}" : '#';
+    $sr_url = $sr_id ? "{$CFG->wwwroot}/course/view.php?id={$sr_id}" : '#';
+    $sk_url = $sk_id ? "{$CFG->wwwroot}/course/view.php?id={$sk_id}" : '#';
+    $pt_url = $pt_id ? "{$CFG->wwwroot}/course/view.php?id={$pt_id}" : '#';
+
+    // Locate English guide
+    $en_guide_url = $en_url;
+    if ($en_id) {
+        $g_en = $DB->get_record_select('page', "course = ? AND name LIKE ?", [$en_id, '%Guide%']);
+        if ($g_en) {
+            $cm = get_coursemodule_from_instance('page', $g_en->id, $en_id);
+            if ($cm) {
+                $en_guide_url = "{$CFG->wwwroot}/mod/page/view.php?id={$cm->id}";
+            }
         }
     }
 
@@ -544,9 +593,14 @@ function demo_frontpage(int $en_id, int $sr_id): void {
         . '<p>Open the demo courses as a guest, or log in with one of these accounts (password <strong>' . DEMO_PASSWORD . '</strong>):</p><ul>'
         . '<li><strong>teacher</strong>: edit the lesson pages, add/modify simulations in TinyMCE, create and configure quiz questions</li>'
         . '<li><strong>student</strong>: explore all 9 interactive simulations, tune hyperparameters, take the auto-graded quizzes</li></ul>'
-        . '<p>Courses available: <a href="' . $en_url . '"><strong>AI for VET: interactive simulations (English)</strong></a> · <a href="' . $sr_url . '"><strong>AI za VET: interaktivne simulacije (srpski)</strong></a> · <a href="' . $en_guide_url . '"><strong>📖 User &amp; Teacher Guide</strong></a></p>'
+        . '<p>Courses available: '
+        . '<a href="' . $en_url . '"><strong>🇬🇧 English</strong></a> · '
+        . '<a href="' . $sr_url . '"><strong>🇷🇸 Srpski</strong></a> · '
+        . '<a href="' . $sk_url . '"><strong>🇸🇰 Slovenčina</strong></a> · '
+        . '<a href="' . $pt_url . '"><strong>🇵🇹 Português</strong></a> · '
+        . '<a href="' . $en_guide_url . '"><strong>📖 Teacher Guide</strong></a></p>'
         . '<p>Project portal: <a href="https://aiforvet.eu/" target="_blank">aiforvet.eu</a> · Standalone simulations: <a href="https://sim.aiforvet.eu/" target="_blank">sim.aiforvet.eu</a></p>'
-        . '<p>Everything you change is reset every night at 03:30. Serbian (Latin and Cyrillic) is in the language menu.</p>';
+        . '<p>Everything you change is reset every night at 03:30. Languages are selectable in the language menu.</p>';
 
     $DB->update_record('course', (object) [
         'id' => SITEID,
@@ -564,14 +618,17 @@ function demo_frontpage(int $en_id, int $sr_id): void {
         . '<span class="badge bg-white bg-opacity-25 text-white px-3 py-2 rounded-pill fw-normal" style="backdrop-filter: blur(4px);">✨ Erasmus+ AI for VET</span>'
         . '<span class="badge bg-info bg-opacity-25 text-white px-3 py-2 rounded-pill fw-normal">🧠 9 Interactive AI Engines</span>'
         . '<span class="badge bg-warning bg-opacity-25 text-white px-3 py-2 rounded-pill fw-normal">⚡ Auto-Graded Quizzes</span>'
+        . '<span class="badge bg-light bg-opacity-25 text-white px-3 py-2 rounded-pill fw-normal">🌐 4 Languages</span>'
         . '<a href="' . $en_guide_url . '" class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold text-decoration-none shadow-sm">📖 User &amp; Teacher Guide →</a>'
         . '</div>'
         . '<h1 class="display-6 fw-bold text-white mb-3">Interactive AI &amp; Machine Learning Simulations in Moodle</h1>'
         . '<p class="lead mb-4" style="color: rgba(255,255,255,0.92) !important; font-size: 1.15rem;">Bring machine learning to life: gradient descent, confusion matrices, neural networks, computer vision kernels, and reinforcement learning running right inside Moodle lessons and quizzes.</p>'
-        . '<div class="d-flex flex-wrap gap-3 mb-2">'
-        . '<a href="' . $en_url . '" class="btn btn-light btn-lg px-4 fw-bold shadow-sm" style="border-radius: 12px; color: #1e1b4b;">🇬🇧 Open English Demo</a>'
-        . '<a href="' . $sr_url . '" class="btn btn-outline-light btn-lg px-4 fw-bold shadow-sm" style="border-radius: 12px; border-width: 2px;">🇷🇸 Otvori kurs na srpskom</a>'
-        . '<a href="' . $en_guide_url . '" class="btn btn-warning text-dark btn-lg px-4 fw-bold shadow-sm" style="border-radius: 12px;">📖 User &amp; Teacher Guide</a>'
+        . '<div class="d-flex flex-wrap gap-2 mb-2">'
+        . ($en_id ? '<a href="' . $en_url . '" class="btn btn-light btn-lg px-3 fw-bold shadow-sm" style="border-radius: 12px; color: #1e1b4b;">🇬🇧 English</a>' : '')
+        . ($sr_id ? '<a href="' . $sr_url . '" class="btn btn-outline-light btn-lg px-3 fw-bold shadow-sm" style="border-radius: 12px; border-width: 2px;">🇷🇸 Srpski</a>' : '')
+        . ($sk_id ? '<a href="' . $sk_url . '" class="btn btn-outline-light btn-lg px-3 fw-bold shadow-sm" style="border-radius: 12px; border-width: 2px;">🇸🇰 Slovenčina</a>' : '')
+        . ($pt_id ? '<a href="' . $pt_url . '" class="btn btn-outline-light btn-lg px-3 fw-bold shadow-sm" style="border-radius: 12px; border-width: 2px;">🇵🇹 Português</a>' : '')
+        . '<a href="' . $en_guide_url . '" class="btn btn-warning text-dark btn-lg px-3 fw-bold shadow-sm" style="border-radius: 12px;">📖 Guide</a>'
         . '</div>'
         . '</div>'
         . '<div class="col-lg-5 mt-4 mt-lg-0">'
@@ -585,26 +642,44 @@ function demo_frontpage(int $en_id, int $sr_id): void {
         . '</div>'
         . '</div>'
         . '</div></div>'
-        // Dual-Language Cards
+        // 4-Language Course Cards
         . '<div class="row g-3 mb-4">'
-        . '<div class="col-md-6">'
-        . '<div class="card h-100 border-0 shadow-sm p-4 demo-course-card" style="background:#ffffff; border-left: 5px solid #4f46e5 !important;">'
-        . '<div class="d-flex justify-content-between align-items-start mb-2">'
-        . '<h4 class="fw-bold mb-0 text-primary">🇬🇧 AI for VET: Demo (English)</h4>'
-        . '<span class="badge bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-pill">AISIM-DEMO</span>'
-        . '</div>'
-        . '<p class="text-muted mb-3">Explore 9 comprehensive Machine Learning modules: optimization, ROC/confusion matrix, polynomial regression, k-NN vs trees, k-means, perceptron/neural networks, convolution, Q-learning, and autograded quizzes.</p>'
-        . '<a href="' . $en_url . '" class="btn btn-primary fw-bold px-4 rounded-3 align-self-start">🚀 Enter English Course →</a>'
-        . '</div></div>'
-        . '<div class="col-md-6">'
-        . '<div class="card h-100 border-0 shadow-sm p-4 demo-course-card" style="background:#ffffff; border-left: 5px solid #059669 !important;">'
-        . '<div class="d-flex justify-content-between align-items-start mb-2">'
-        . '<h4 class="fw-bold mb-0 text-success">🇷🇸 AI za VET: Demo (srpski)</h4>'
-        . '<span class="badge bg-success bg-opacity-10 text-success px-3 py-1 rounded-pill">AISIM-DEMO-SR</span>'
-        . '</div>'
-        . '<p class="text-muted mb-3">Kompletan kurs sa 9 interaktivnih simulacija: gradijentni spust, matrica konfuzije, nelinearne granice, k-means, obučavanje neuronskih mreža za XOR, filtri slike, pojačano učenje i interaktivni kviz.</p>'
-        . '<a href="' . $sr_url . '" class="btn btn-success fw-bold px-4 rounded-3 align-self-start">🇷🇸 Otvori kurs na srpskom →</a>'
-        . '</div></div>'
+        . ($en_id ? ('<div class="col-md-6 col-lg-3">'
+            . '<div class="card h-100 border-0 shadow-sm p-3 demo-course-card d-flex flex-column" style="background:#ffffff; border-top: 4px solid #4f46e5 !important;">'
+            . '<div class="d-flex justify-content-between align-items-start mb-2">'
+            . '<h5 class="fw-bold mb-0 text-primary">🇬🇧 English</h5>'
+            . '<span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1 rounded-pill small">AISIM-DEMO</span>'
+            . '</div>'
+            . '<p class="text-muted small flex-grow-1 mb-3">AI for VET: 9 interactive simulations, autograded quiz challenges, and TinyMCE inserter.</p>'
+            . '<a href="' . $en_url . '" class="btn btn-primary btn-sm fw-bold px-3 rounded-3 w-100">🚀 Enter English →</a>'
+            . '</div></div>') : '')
+        . ($sr_id ? ('<div class="col-md-6 col-lg-3">'
+            . '<div class="card h-100 border-0 shadow-sm p-3 demo-course-card d-flex flex-column" style="background:#ffffff; border-top: 4px solid #059669 !important;">'
+            . '<div class="d-flex justify-content-between align-items-start mb-2">'
+            . '<h5 class="fw-bold mb-0 text-success">🇷🇸 Srpski</h5>'
+            . '<span class="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded-pill small">AISIM-DEMO-SR</span>'
+            . '</div>'
+            . '<p class="text-muted small flex-grow-1 mb-3">AI za VET: 9 interaktivnih simulacija, ocenjivani kviz zadaci i integracija u Moodle.</p>'
+            . '<a href="' . $sr_url . '" class="btn btn-success btn-sm fw-bold px-3 rounded-3 w-100">🇷🇸 Otvori kurs →</a>'
+            . '</div></div>') : '')
+        . ($sk_id ? ('<div class="col-md-6 col-lg-3">'
+            . '<div class="card h-100 border-0 shadow-sm p-3 demo-course-card d-flex flex-column" style="background:#ffffff; border-top: 4px solid #d97706 !important;">'
+            . '<div class="d-flex justify-content-between align-items-start mb-2">'
+            . '<h5 class="fw-bold mb-0" style="color: #d97706;">🇸🇰 Slovenčina</h5>'
+            . '<span class="badge bg-warning bg-opacity-25 text-dark px-2 py-1 rounded-pill small">AISIM-DEMO-SK</span>'
+            . '</div>'
+            . '<p class="text-muted small flex-grow-1 mb-3">AI pre OVP: 9 interaktívnych simulácií, automaticky hodnotené testy a metodická príručka.</p>'
+            . '<a href="' . $sk_url . '" class="btn btn-warning text-dark btn-sm fw-bold px-3 rounded-3 w-100">🇸🇰 Otvoriť kurz →</a>'
+            . '</div></div>') : '')
+        . ($pt_id ? ('<div class="col-md-6 col-lg-3">'
+            . '<div class="card h-100 border-0 shadow-sm p-3 demo-course-card d-flex flex-column" style="background:#ffffff; border-top: 4px solid #0284c7 !important;">'
+            . '<div class="d-flex justify-content-between align-items-start mb-2">'
+            . '<h5 class="fw-bold mb-0" style="color: #0284c7;">🇵🇹 Português</h5>'
+            . '<span class="badge bg-info bg-opacity-10 text-info px-2 py-1 rounded-pill small">AISIM-DEMO-PT</span>'
+            . '</div>'
+            . '<p class="text-muted small flex-grow-1 mb-3">IA para EFP: 9 simulações interativas, testes avaliados automaticamente e guia pedagógico.</p>'
+            . '<a href="' . $pt_url . '" class="btn btn-info text-white btn-sm fw-bold px-3 rounded-3 w-100">🇵🇹 Entrar no curso →</a>'
+            . '</div></div>') : '')
         . '</div>'
         // Test Accounts Strip
         . '<div class="card border-0 shadow-sm rounded-4 mb-4 p-3 bg-light">'
@@ -627,18 +702,4 @@ function demo_frontpage(int $en_id, int $sr_id): void {
     set_config('frontpage', FRONTPAGEALLCOURSELIST);
     set_config('frontpageloggedin', FRONTPAGEALLCOURSELIST);
     echo "front page done\n";
-}
-
-/**
- * Front page with a single course fallback.
- */
-function demo_frontpage_single(int $courseid): void {
-    global $CFG, $DB;
-    $url = "{$CFG->wwwroot}/course/view.php?id={$courseid}";
-    $hero = '<div class="card border-0 shadow-sm rounded-4 mb-4 p-5 text-white" style="background: linear-gradient(135deg, #090d16 0%, #1e1b4b 100%);">'
-        . '<h1 class="display-6 fw-bold mb-3">AI for VET Simulations Demo</h1>'
-        . '<a href="' . $url . '" class="btn btn-light btn-lg px-4 fw-bold">Open Course</a>'
-        . '</div>';
-    $DB->set_field('course_sections', 'summary', $hero, ['course' => SITEID, 'section' => 1]);
-    $DB->set_field('course_sections', 'summaryformat', FORMAT_HTML, ['course' => SITEID, 'section' => 1]);
 }

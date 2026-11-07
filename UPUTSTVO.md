@@ -28,6 +28,8 @@ Kopirajte datoteke u Moodle direktorijum i pokrenite inicijalni setup:
 cp demo.php /home/aisim/public_html/moodle/
 cp aisim-demo.mbz /home/aisim/public_html/moodle/
 cp aisim-demo-sr.mbz /home/aisim/public_html/moodle/
+cp aisim-demo-sk.mbz /home/aisim/public_html/moodle/
+cp aisim-demo-pt.mbz /home/aisim/public_html/moodle/
 
 cd /home/aisim/public_html/moodle
 php demo.php setup
@@ -35,9 +37,9 @@ php demo.php setup
 
 Ova komanda automatski:
 - Uključuje filter za veštačku inteligenciju (`filter_aisim`).
-- Instalira srpske jezičke pakete (`sr_lt` i `sr_cr`).
+- Instalira srpske (`sr_lt`, `sr_cr`), slovačke (`sk`) i portugalske (`pt`) jezičke pakete.
 - Kreira moderne tematske indigo Boost stilove i prilagođenu naslovnu stranu sa živim optimizatorom.
-- Restaurira oba kursa: **`AISIM-DEMO`** (engleski) i **`AISIM-DEMO-SR`** (srpski).
+- Restaurira sva 4 kursa: **`AISIM-DEMO`** (engleski), **`AISIM-DEMO-SR`** (srpski), **`AISIM-DEMO-SK`** (slovački) i **`AISIM-DEMO-PT`** (portugalski).
 - Kreira i upisuje demo naloge (`student` i `teacher`, lozinka `Demo-2026`).
 
 ---

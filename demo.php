@@ -132,9 +132,35 @@ function demo_settings(): void {
     }
     filter_set_global_state('aisim', TEXTFILTER_ON);
 
-    // Modern Boost theme custom CSS with AI/Indigo theme
+    // Demo login instructions on login/index.php
+    $auth_instructions = <<<'HTML'
+<div class="card border-0 shadow-lg rounded-4 p-4 text-start text-white" style="background: rgba(15, 23, 42, 0.9) !important; backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.2) !important;">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <span class="fs-4">⚡</span>
+        <h5 class="fw-bold mb-0 text-white">Instant Demo Access</h5>
+    </div>
+    <div class="p-3 rounded-3 mb-2" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.12);">
+        <div class="fw-bold mb-1" style="color: #38bdf8;">🧑‍🏫 Teacher: <code>teacher</code></div>
+        <div class="small" style="color: rgba(255, 255, 255, 0.85);">Explore all lesson modules, insert AI simulations in TinyMCE, create and configure quiz questions.</div>
+    </div>
+    <div class="p-3 rounded-3 mb-3" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.12);">
+        <div class="fw-bold mb-1" style="color: #fbbf24;">🎓 Student: <code>student</code></div>
+        <div class="small" style="color: rgba(255, 255, 255, 0.85);">Interact with 9 AI simulation engines, tune hyperparameters, solve autograded quiz challenges.</div>
+    </div>
+    <div class="d-flex align-items-center justify-content-between pt-2 border-top border-white border-opacity-25 small mb-2">
+        <span style="color: rgba(255, 255, 255, 0.85);">Password:</span>
+        <code style="background: #000000; color: #fde047; padding: 3px 8px; border-radius: 6px; font-weight: bold; font-size: 0.95rem;">Demo-2026</code>
+    </div>
+    <div class="text-center small mt-2" style="color: rgba(255, 255, 255, 0.7);">
+        Or click the <strong>Log in as guest</strong> button below!
+    </div>
+</div>
+HTML;
+    set_config('auth_instructions', $auth_instructions);
+
+    // Modern Boost and Moove theme custom CSS with AI/Indigo theme
     $customcss = <<<'CSS'
-/* Modern Boost Theme Enhancements for AISim Demo */
+/* Modern Boost & Moove Theme Enhancements for AISim Demo */
 :root {
     --bs-primary: #4f46e5;
     --bs-primary-rgb: 79, 70, 229;
@@ -177,8 +203,86 @@ pre, code, kbd, samp {
 .aisim-container {
     border-radius: 12px;
 }
+
+/* AI-themed Neural Network background for login page */
+.login-layout-left {
+    background-color: #090d16 !important;
+    background-image: 
+        radial-gradient(at 15% 15%, rgba(99, 102, 241, 0.45) 0px, transparent 50%),
+        radial-gradient(at 85% 25%, rgba(56, 189, 248, 0.4) 0px, transparent 45%),
+        radial-gradient(at 50% 85%, rgba(67, 56, 202, 0.5) 0px, transparent 60%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 800 800'%3E%3Cg fill='none' stroke='rgba(99,102,241,0.22)' stroke-width='1.5'%3E%3Cpath d='M100 200 L250 120 L400 220 L550 140 L700 240 M250 120 L400 350 L250 500 M400 220 L550 380 L400 550 M550 140 L700 360 L550 520 M100 450 L250 500 L400 550 L550 520 L700 600 M250 500 L400 680 L550 520'/%3E%3Ccircle cx='100' cy='200' r='6' fill='%2338bdf8' opacity='0.7'/%3E%3Ccircle cx='250' cy='120' r='8' fill='%23818cf8' opacity='0.8'/%3E%3Ccircle cx='400' cy='220' r='7' fill='%236366f1' opacity='0.8'/%3E%3Ccircle cx='550' cy='140' r='8' fill='%2338bdf8' opacity='0.8'/%3E%3Ccircle cx='700' cy='240' r='6' fill='%23818cf8' opacity='0.7'/%3E%3Ccircle cx='400' cy='350' r='9' fill='%23a855f7' opacity='0.8'/%3E%3Ccircle cx='550' cy='380' r='7' fill='%236366f1' opacity='0.8'/%3E%3Ccircle cx='700' cy='360' r='6' fill='%2338bdf8' opacity='0.7'/%3E%3Ccircle cx='100' cy='450' r='6' fill='%23818cf8' opacity='0.7'/%3E%3Ccircle cx='250' cy='500' r='8' fill='%236366f1' opacity='0.8'/%3E%3Ccircle cx='400' cy='550' r='9' fill='%23818cf8' opacity='0.8'/%3E%3Ccircle cx='550' cy='520' r='8' fill='%2338bdf8' opacity='0.8'/%3E%3Ccircle cx='700' cy='600' r='6' fill='%23a855f7' opacity='0.7'/%3E%3Ccircle cx='400' cy='680' r='7' fill='%236366f1' opacity='0.8'/%3E%3C/g%3E%3C/svg%3E"),
+        linear-gradient(135deg, #090d16 0%, #0f172a 50%, #1e1b4b 100%) !important;
+    background-size: cover !important;
+    background-position: center !important;
+    position: relative !important;
+}
+
+/* Remove default watermark */
+.login-layout-left::after {
+    display: none !important;
+}
+
+/* Clean transparent content holder */
+.login-layout-left-content {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    max-width: 480px !important;
+    width: 100% !important;
+    margin-bottom: 2rem !important;
+}
+
+.login-layout-left-content .card {
+    background: rgba(15, 23, 42, 0.88) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+}
+
+.login-layout-left-content .card h5,
+.login-layout-left-content .card strong,
+.login-layout-left-content .card .fw-bold {
+    color: #ffffff !important;
+}
+
+.login-layout-left-content .card code {
+    background: rgba(0, 0, 0, 0.6) !important;
+    color: #fde047 !important;
+    padding: 2px 7px !important;
+    border-radius: 5px !important;
+}
+
+/* Mobile responsive login adjustments */
+.login-container .text_to_html .card {
+    background: #0f172a !important;
+    color: #ffffff !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
+}
+.login-container .text_to_html .card code {
+    background: #000000 !important;
+    color: #fde047 !important;
+}
+
+/* Login button polish */
+.loginform .btn-primary {
+    background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%) !important;
+    border: none !important;
+    padding: 0.75rem 1.5rem !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4) !important;
+}
+.loginform .btn-primary:hover {
+    background: linear-gradient(135deg, #3730a3 0%, #4338ca 100%) !important;
+}
 CSS;
     set_config('customcss', $customcss, 'theme_boost');
+    set_config('customcss', $customcss, 'theme_moove');
 
     // The shared demo accounts cannot change their password, profile or private files.
     $userrole = get_archetype_roles('user');

@@ -257,17 +257,32 @@ function demo_restore_course(string $filename, string $shortname, string $fullna
 }
 
 /**
- * Section 0 banner with 4-step guided tour and language switcher button.
+ * Section 0 banner with 4-step guided tour, guide button, and language switcher button.
  */
 function demo_section_banner(int $courseid, string $lang, int $other_courseid): void {
     global $CFG, $DB;
     $other_url = "{$CFG->wwwroot}/course/view.php?id={$other_courseid}";
 
+    // Locate the Guide page in this course
+    $guide_btn = '';
+    $guide_page = $DB->get_record_select('page', "course = ? AND (name LIKE ? OR name LIKE ?)", [$courseid, '%Guide%', '%Vodič%']);
+    if ($guide_page) {
+        $guide_cm = get_coursemodule_from_instance('page', $guide_page->id, $courseid);
+        if ($guide_cm) {
+            $guide_url = "{$CFG->wwwroot}/mod/page/view.php?id={$guide_cm->id}";
+            $btn_text = ($lang === 'en') ? '📖 User &amp; Teacher Guide →' : '📖 Vodič za simulacije →';
+            $guide_btn = '<a href="' . $guide_url . '" class="btn btn-sm btn-warning text-dark rounded-pill px-3 fw-bold shadow-sm" style="backdrop-filter: blur(4px);">' . $btn_text . '</a>';
+        }
+    }
+
     if ($lang === 'en') {
         $banner = '<div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: linear-gradient(135deg, #090d16 0%, #1e1b4b 60%, #4338ca 100%); color: #ffffff;">'
             . '<div class="card-body p-4">'
             . '<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">'
+            . '<div class="d-flex flex-wrap align-items-center gap-2">'
             . '<span class="badge bg-white bg-opacity-25 text-white px-3 py-2 rounded-pill fw-normal" style="backdrop-filter: blur(4px);">✨ AI for VET Demo · English</span>'
+            . $guide_btn
+            . '</div>'
             . '<a href="' . $other_url . '" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold" style="backdrop-filter: blur(4px);">🇷🇸 Prebaci na srpski kurs →</a>'
             . '</div>'
             . '<h2 class="fw-bold text-white mb-2">Welcome to AI for VET Simulations!</h2>'
@@ -286,7 +301,10 @@ function demo_section_banner(int $courseid, string $lang, int $other_courseid): 
         $banner = '<div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: linear-gradient(135deg, #090d16 0%, #1e1b4b 60%, #4338ca 100%); color: #ffffff;">'
             . '<div class="card-body p-4">'
             . '<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">'
+            . '<div class="d-flex flex-wrap align-items-center gap-2">'
             . '<span class="badge bg-white bg-opacity-25 text-white px-3 py-2 rounded-pill fw-normal" style="backdrop-filter: blur(4px);">✨ AI for VET Demo · Srpski</span>'
+            . $guide_btn
+            . '</div>'
             . '<a href="' . $other_url . '" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold" style="backdrop-filter: blur(4px);">🌐 Switch to English Course →</a>'
             . '</div>'
             . '<h2 class="fw-bold text-white mb-2">Dobrodošli u AI for VET simulacije!</h2>'
@@ -363,6 +381,24 @@ function demo_frontpage(int $en_id, int $sr_id): void {
     $en_url = "{$CFG->wwwroot}/course/view.php?id={$en_id}";
     $sr_url = "{$CFG->wwwroot}/course/view.php?id={$sr_id}";
 
+    // Locate guides
+    $en_guide_url = "{$CFG->wwwroot}/course/view.php?id={$en_id}";
+    $sr_guide_url = "{$CFG->wwwroot}/course/view.php?id={$sr_id}";
+    $g_en = $DB->get_record_select('page', "course = ? AND name LIKE ?", [$en_id, '%Guide%']);
+    if ($g_en) {
+        $cm = get_coursemodule_from_instance('page', $g_en->id, $en_id);
+        if ($cm) {
+            $en_guide_url = "{$CFG->wwwroot}/mod/page/view.php?id={$cm->id}";
+        }
+    }
+    $g_sr = $DB->get_record_select('page', "course = ? AND name LIKE ?", [$sr_id, '%Vodič%']);
+    if ($g_sr) {
+        $cm = get_coursemodule_from_instance('page', $g_sr->id, $sr_id);
+        if ($cm) {
+            $sr_guide_url = "{$CFG->wwwroot}/mod/page/view.php?id={$cm->id}";
+        }
+    }
+
     $summary = '<p>This is the demo site of the <strong>AI for VET (AISim) plugins for Moodle</strong>: '
         . '<a href="https://github.com/blagojevicboban/moodle-tiny_aisim">tiny_aisim</a> (insert and edit simulations in TinyMCE), '
         . '<a href="https://github.com/blagojevicboban/moodle-filter_aisim">filter_aisim</a> (renders 9 interactive AI simulation engines) and '
@@ -370,7 +406,7 @@ function demo_frontpage(int $en_id, int $sr_id): void {
         . '<p>Open the demo courses as a guest, or log in with one of these accounts (password <strong>' . DEMO_PASSWORD . '</strong>):</p><ul>'
         . '<li><strong>teacher</strong>: edit the lesson pages, add/modify simulations in TinyMCE, create and configure quiz questions</li>'
         . '<li><strong>student</strong>: explore all 9 interactive simulations, tune hyperparameters, take the auto-graded quizzes</li></ul>'
-        . '<p>Courses available: <a href="' . $en_url . '"><strong>AI for VET: interactive simulations (English)</strong></a> · <a href="' . $sr_url . '"><strong>AI za VET: interaktivne simulacije (srpski)</strong></a></p>'
+        . '<p>Courses available: <a href="' . $en_url . '"><strong>AI for VET: interactive simulations (English)</strong></a> · <a href="' . $sr_url . '"><strong>AI za VET: interaktivne simulacije (srpski)</strong></a> · <a href="' . $en_guide_url . '"><strong>📖 User &amp; Teacher Guide</strong></a></p>'
         . '<p>Project portal: <a href="https://aiforvet.eu/" target="_blank">aiforvet.eu</a> · Standalone simulations: <a href="https://sim.aiforvet.eu/" target="_blank">sim.aiforvet.eu</a></p>'
         . '<p>Everything you change is reset every night at 03:30. Serbian (Latin and Cyrillic) is in the language menu.</p>';
 
@@ -390,13 +426,14 @@ function demo_frontpage(int $en_id, int $sr_id): void {
         . '<span class="badge bg-white bg-opacity-25 text-white px-3 py-2 rounded-pill fw-normal" style="backdrop-filter: blur(4px);">✨ Erasmus+ AI for VET</span>'
         . '<span class="badge bg-info bg-opacity-25 text-white px-3 py-2 rounded-pill fw-normal">🧠 9 Interactive AI Engines</span>'
         . '<span class="badge bg-warning bg-opacity-25 text-white px-3 py-2 rounded-pill fw-normal">⚡ Auto-Graded Quizzes</span>'
-        . '<span class="badge bg-success bg-opacity-25 text-white px-3 py-2 rounded-pill fw-normal">🌐 100% Client-Side / Zero Setup</span>'
+        . '<a href="' . $en_guide_url . '" class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold text-decoration-none shadow-sm">📖 User &amp; Teacher Guide →</a>'
         . '</div>'
         . '<h1 class="display-6 fw-bold text-white mb-3">Interactive AI &amp; Machine Learning Simulations in Moodle</h1>'
         . '<p class="lead mb-4" style="color: rgba(255,255,255,0.92) !important; font-size: 1.15rem;">Bring machine learning to life: gradient descent, confusion matrices, neural networks, computer vision kernels, and reinforcement learning running right inside Moodle lessons and quizzes.</p>'
         . '<div class="d-flex flex-wrap gap-3 mb-2">'
         . '<a href="' . $en_url . '" class="btn btn-light btn-lg px-4 fw-bold shadow-sm" style="border-radius: 12px; color: #1e1b4b;">🇬🇧 Open English Demo</a>'
         . '<a href="' . $sr_url . '" class="btn btn-outline-light btn-lg px-4 fw-bold shadow-sm" style="border-radius: 12px; border-width: 2px;">🇷🇸 Otvori kurs na srpskom</a>'
+        . '<a href="' . $en_guide_url . '" class="btn btn-warning text-dark btn-lg px-4 fw-bold shadow-sm" style="border-radius: 12px;">📖 User &amp; Teacher Guide</a>'
         . '</div>'
         . '</div>'
         . '<div class="col-lg-5 mt-4 mt-lg-0">'

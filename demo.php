@@ -118,7 +118,7 @@ function demo_settings(): void {
         'noemailever' => 1,         // Nothing is ever mailed.
         'registerauth' => '',       // No self registration.
         'guestloginbutton' => 1,    // "Access as a guest" on the login page.
-        'forceclean' => 1,          // All content is cleaned, so nobody can put a script on a page.
+        'forceclean' => 0,          // Keep data-aisim attributes intact for simulation engines.
         'langmenu' => 1,
         'timezone' => 'Europe/Belgrade',
         'maxbytes' => 2097152,

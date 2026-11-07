@@ -306,12 +306,12 @@ CSS;
 }
 
 /**
- * Unpacks the latest tiny_aisim 0.10.0 plugin package if present and runs Moodle database upgrade.
+ * Unpacks the latest tiny_aisim 0.10.0 plugin package if present.
  */
 function demo_upgrade_plugins(): void {
     global $CFG;
     $zipfile = __DIR__ . '/tiny_aisim-0.10.0.zip';
-    if (file_exists($zipfile)) {
+    if (file_exists($zipfile) && class_exists('ZipArchive')) {
         $zip = new \ZipArchive();
         if ($zip->open($zipfile) === true) {
             $dest = $CFG->dirroot . '/lib/editor/tiny/plugins';
@@ -320,9 +320,6 @@ function demo_upgrade_plugins(): void {
             echo "Extracted tiny_aisim-0.10.0 to {$dest}/aisim\n";
         }
     }
-    require_once($CFG->libdir . '/upgradelib.php');
-    upgrade_core();
-    echo "plugin upgrades done\n";
 }
 
 /**

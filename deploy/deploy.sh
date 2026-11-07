@@ -32,6 +32,9 @@ if [ -f tiny_aisim-0.10.0.zip ]; then
     cp tiny_aisim-0.10.0.zip "${TARGET_DIR}/"
 fi
 
+echo "[$(date -Iseconds)] Running plugin upgrades if any..."
+/usr/bin/php "${TARGET_DIR}/admin/cli/upgrade.php" --non-interactive || true
+
 echo "[$(date -Iseconds)] Running demo.php reset..."
 /usr/bin/php "${TARGET_DIR}/demo.php" reset
 echo "[$(date -Iseconds)] AISim demo deploy finished successfully!"

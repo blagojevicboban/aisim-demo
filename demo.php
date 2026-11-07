@@ -292,7 +292,6 @@ CSS;
         'moodle/user:changeownpassword',
         'moodle/user:editownprofile',
         'moodle/user:manageownfiles',
-        'moodle/user:deleteownprofile',
     ] as $cap) {
         assign_capability($cap, CAP_PROHIBIT, $userrole->id, $system->id, true);
     }

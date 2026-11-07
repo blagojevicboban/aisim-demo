@@ -57,6 +57,7 @@ if (!in_array($command, ['setup', 'reset'], true)) {
 
 // Settings and CSS are always updated so design refinements apply on reset too.
 demo_settings();
+demo_upgrade_plugins();
 demo_cleanup_obsolete_courses();
 if ($command === 'setup') {
     demo_languages();
@@ -205,6 +206,9 @@ pre, code, kbd, samp {
 }
 
 /* AI-themed Neural Network background for login page */
+body.pagelayout-login #page .login-layout-left,
+body.login-layout #page .login-layout-left,
+#page.login-layout .login-layout-left,
 .login-layout-left {
     background-color: #090d16 !important;
     background-image: 
@@ -219,6 +223,9 @@ pre, code, kbd, samp {
 }
 
 /* Remove default watermark */
+body.pagelayout-login #page .login-layout-left::after,
+body.login-layout #page .login-layout-left::after,
+#page.login-layout .login-layout-left::after,
 .login-layout-left::after {
     display: none !important;
 }
@@ -281,6 +288,10 @@ pre, code, kbd, samp {
     background: linear-gradient(135deg, #3730a3 0%, #4338ca 100%) !important;
 }
 CSS;
+    // Clear theme_moove default login background image so custom CSS takes precedence
+    set_config('loginbgimg', '', 'theme_moove');
+    set_config('scss', $customcss, 'theme_boost');
+    set_config('scss', $customcss, 'theme_moove');
     set_config('customcss', $customcss, 'theme_boost');
     set_config('customcss', $customcss, 'theme_moove');
 
@@ -292,6 +303,26 @@ CSS;
         assign_capability($cap, CAP_PROHIBIT, $userrole->id, $system->id, true);
     }
     echo "settings and custom CSS done\n";
+}
+
+/**
+ * Unpacks the latest tiny_aisim 0.10.0 plugin package if present and runs Moodle database upgrade.
+ */
+function demo_upgrade_plugins(): void {
+    global $CFG;
+    $zipfile = __DIR__ . '/tiny_aisim-0.10.0.zip';
+    if (file_exists($zipfile)) {
+        $zip = new \ZipArchive();
+        if ($zip->open($zipfile) === true) {
+            $dest = $CFG->dirroot . '/lib/editor/tiny/plugins';
+            $zip->extractTo($dest);
+            $zip->close();
+            echo "Extracted tiny_aisim-0.10.0 to {$dest}/aisim\n";
+        }
+    }
+    require_once($CFG->libdir . '/upgradelib.php');
+    upgrade_core();
+    echo "plugin upgrades done\n";
 }
 
 /**

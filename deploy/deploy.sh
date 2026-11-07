@@ -24,6 +24,9 @@ echo "[$(date -Iseconds)] Deploying to ${TARGET_DIR}..."
 cp demo.php "${TARGET_DIR}/"
 cp aisim-demo.mbz "${TARGET_DIR}/"
 cp aisim-demo-sr.mbz "${TARGET_DIR}/"
+if [ -f tiny_aisim-0.10.0.zip ]; then
+    cp tiny_aisim-0.10.0.zip "${TARGET_DIR}/"
+fi
 
 echo "[$(date -Iseconds)] Running demo.php reset..."
 /usr/bin/php "${TARGET_DIR}/demo.php" reset

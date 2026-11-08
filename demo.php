@@ -485,6 +485,10 @@ function demo_restore_course(string $filename, string $shortname, string $fullna
     $DB->set_field('course', 'shortname', $shortname, ['id' => $course->id]);
     $DB->set_field('course', 'visible', 1, ['id' => $course->id]);
 
+    demo_guest_access((int)$course->id);
+    demo_teacher_limits((int)$course->id);
+    rebuild_course_cache((int)$course->id, true);
+
     echo "course {$shortname} restored ({$course->id})\n";
     return (int)$course->id;
 }
@@ -636,6 +640,37 @@ function demo_users(int $courseid): void {
         $roleid = $DB->get_field('role', 'id', ['shortname' => $u['role']], MUST_EXIST);
         $manual->enrol_user($instance, $user->id, $roleid);
         echo "user {$username} enrolled in course {$courseid} as {$u['role']}\n";
+    }
+}
+
+/**
+ * Ensure guest access is enabled for this course.
+ */
+function demo_guest_access(int $courseid): void {
+    global $DB;
+    $guest = enrol_get_plugin('guest');
+    $course = get_course($courseid);
+    $instance = $DB->get_record('enrol', ['courseid' => $courseid, 'enrol' => 'guest']);
+    if (!$instance) {
+        $guest->add_instance($course, ['status' => ENROL_INSTANCE_ENABLED]);
+    } else if ($instance->status != ENROL_INSTANCE_ENABLED) {
+        $guest->update_status($instance, ENROL_INSTANCE_ENABLED);
+    }
+}
+
+/**
+ * The demo teacher edits activities and questions, but not the course itself or participants.
+ */
+function demo_teacher_limits(int $courseid): void {
+    global $DB;
+    $role = $DB->get_record('role', ['shortname' => 'editingteacher'], '*', MUST_EXIST);
+    $context = context_course::instance($courseid);
+    foreach ([
+        'moodle/course:update', 'moodle/course:enrolconfig', 'moodle/course:enrolreview', 'moodle/role:assign',
+        'enrol/manual:enrol', 'enrol/manual:manage', 'enrol/guest:config', 'moodle/backup:backupcourse',
+        'moodle/restore:restorecourse', 'moodle/course:reset', 'moodle/course:delete',
+    ] as $cap) {
+        assign_capability($cap, CAP_PROHIBIT, $role->id, $context->id, true);
     }
 }
 

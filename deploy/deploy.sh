@@ -32,6 +32,10 @@ cp aisim-demo.mbz "${TARGET_DIR}/"
 cp aisim-demo-sr.mbz "${TARGET_DIR}/"
 cp aisim-demo-sk.mbz "${TARGET_DIR}/"
 cp aisim-demo-pt.mbz "${TARGET_DIR}/"
+if [ -d cards ]; then
+    mkdir -p "${TARGET_DIR}/cards"
+    cp -r cards/* "${TARGET_DIR}/cards/"
+fi
 if [ -f tiny_aisim-0.10.0.zip ]; then
     cp tiny_aisim-0.10.0.zip "${TARGET_DIR}/"
     echo "[$(date -Iseconds)] Extracting tiny_aisim-0.10.0.zip into lib/editor/tiny/plugins..."

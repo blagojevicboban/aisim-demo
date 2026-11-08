@@ -51,6 +51,20 @@ const DEMO_SHORTNAME_PT = 'AISIM-DEMO-PT';
 const DEMO_FULLNAME_PT = 'IA para EFP: simulações interativas (português)';
 const DEMO_MBZ_PT = 'aisim-demo-pt.mbz';
 
+const DEMO_SUMMARIES = [
+    'en' => 'Interactive simulations of Machine Learning & AI for Vocational Education and Training (Erasmus+ AI for VET). Explore 9 interactive modules: gradient descent optimization, ROC & confusion matrix, polynomial regression, k-NN vs decision trees, k-means clustering, perceptron & neural networks, computer vision convolution, Q-learning reinforcement learning, and autograded interactive quiz challenges.',
+    'sr' => 'Interaktivne simulacije mašinskog učenja i veštačke inteligencije za srednje stručno obrazovanje (Erasmus+ AI for VET). Istražite 9 praktičnih modula: gradijentni spust, matrica konfuzije i ROC, polinomijalna regresija, k-NN i stabla odlučivanja, k-means klasterizacija, obučavanje neuronskih mreža za XOR, konvolucija u obradi slike, pojačano učenje (Q-learning) i interaktivni ocenjivani kviz zadaci.',
+    'sk' => 'Interaktívne simulácie pre odborné vzdelávanie a prípravu (Erasmus+ AI for VET): preskúmajte gradientný zostup, maticu zámen, neurónové siete, počítačové videnie, posilňované učenie a automaticky hodnotené úlohy.',
+    'pt' => 'Simulações interativas para o Ensino e Formação Profissional (Erasmus+ AI for VET): explore descida do gradiente, matriz de confusão, redes neuronais, visão computacional, aprendizagem por reforço e testes automáticos.',
+];
+
+const DEMO_CARDS = [
+    'en' => 'cards/card-en.png',
+    'sr' => 'cards/card-sr.png',
+    'sk' => 'cards/card-sk.png',
+    'pt' => 'cards/card-pt.png',
+];
+
 const DEMO_PASSWORD = 'Demo-2026';
 const DEMO_USERS = [
     'teacher' => ['firstname' => 'Demo', 'lastname' => 'Teacher', 'role' => 'editingteacher'],
@@ -86,6 +100,7 @@ $course_map = array_filter([
 foreach ($course_map as $lang => $cid) {
     demo_section_banner($cid, $lang, $course_map);
     demo_users($cid);
+    demo_set_course_overview($cid, DEMO_SUMMARIES[$lang] ?? '', DEMO_CARDS[$lang] ?? '');
 }
 
 if (!empty($course_map)) {
@@ -351,6 +366,52 @@ function demo_languages(bool $force = false): void {
         }
     } catch (\Throwable $e) {
         echo "language packs warning: " . $e->getMessage() . "\n";
+    }
+}
+
+/**
+ * Sets the course summary and attaches the custom card cover image to overviewfiles.
+ */
+function demo_set_course_overview(int $courseid, string $summary, string $cardfile): void {
+    global $DB;
+
+    // 1. Set summary
+    if ($summary !== '') {
+        $DB->set_field('course', 'summary', $summary, ['id' => $courseid]);
+        $DB->set_field('course', 'summaryformat', FORMAT_HTML, ['id' => $courseid]);
+    }
+
+    // 2. Attach overview card image
+    $candidates = [
+        __DIR__ . '/' . $cardfile,
+        __DIR__ . '/' . basename($cardfile),
+    ];
+    $found = null;
+    foreach ($candidates as $cand) {
+        if (file_exists($cand)) {
+            $found = $cand;
+            break;
+        }
+    }
+
+    if ($found) {
+        try {
+            $context = \context_course::instance($courseid);
+            $fs = get_file_storage();
+            $fs->delete_area_files($context->id, 'course', 'overviewfiles');
+            $filerecord = [
+                'contextid' => $context->id,
+                'component' => 'course',
+                'filearea' => 'overviewfiles',
+                'itemid' => 0,
+                'filepath' => '/',
+                'filename' => basename($found),
+            ];
+            $fs->create_file_from_pathname($filerecord, $found);
+            echo "course {$courseid} overview image set: " . basename($found) . "\n";
+        } catch (\Throwable $e) {
+            echo "course {$courseid} overview image warning: " . $e->getMessage() . "\n";
+        }
     }
 }
 

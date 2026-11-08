@@ -150,6 +150,21 @@ function demo_settings(): void {
         set_config($name, $value);
     }
     filter_set_global_state('aisim', TEXTFILTER_ON);
+    if (file_exists($CFG->dirroot . '/filter/algorithm/version.php')) {
+        filter_set_global_state('algorithm', TEXTFILTER_ON);
+    }
+    if (file_exists($CFG->dirroot . '/filter/codelab/version.php')) {
+        filter_set_global_state('codelab', TEXTFILTER_ON);
+    }
+
+    // Ensure none of the 3 subplugins are disabled in TinyMCE
+    $disabled = get_config('editor_tiny', 'disabledsubplugins') ?: '';
+    if (!empty($disabled)) {
+        $parts = array_filter(array_map('trim', explode(',', $disabled)), function($p) {
+            return !in_array($p, ['algorithm', 'codelab', 'aisim']);
+        });
+        set_config('disabledsubplugins', implode(',', $parts), 'editor_tiny');
+    }
 
     // Demo login instructions on login/index.php
     $auth_instructions = <<<'HTML'
